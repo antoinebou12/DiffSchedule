@@ -1,0 +1,26 @@
+image: python:latest
+
+before_script:
+  - apt-get update -qq
+  - apt-get install -y python3-dev python3-pip
+  - pip install -r requirements.txt
+  - pip install -r requirements-dev.txt
+
+
+cache:
+  paths:
+  - ~/.cache/pip/
+
+stages:
+  - build
+  - test
+
+
+build:
+  stage: build
+  script: python3 setup.py develop
+
+
+test:
+  stage: test
+  script: pytest tests --disable-pytest-warnings
