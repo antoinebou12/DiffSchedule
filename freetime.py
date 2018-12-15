@@ -225,7 +225,7 @@ class MainGUI(QMainWindow):
 
     def open_recent(self):
         week = pickle.load(open(self.tmp_filename, 'rb'))
-        self.grid.set_week = week
+        self.grid.week = week
 
     def compare(self):
         cmp_dialog = CompareDialog(parent=self)
@@ -436,7 +436,7 @@ class CompareCommand(QUndoCommand):
         self._week_backup = self._grid.week
 
     def undo(self):
-        self._grid.set_week = self._week_backup
+        self._grid.week = self._week_backup
 
     def redo(self):
         self._grid.set_cmp_week(self._cmp_week)
@@ -453,11 +453,11 @@ class ClearCommand(QUndoCommand):
 
     def undo(self):
         self._week = self._week_backup
-        self._grid.set_week = self._week_backup
+        self._grid.week = self._week_backup
 
     def redo(self):
         self._week = WeekSpace(0, 0)
-        self._grid.set_week = WeekSpace(0, 0)
+        self._grid.week = WeekSpace(0, 0)
 
 
 class SaveCommand(object):

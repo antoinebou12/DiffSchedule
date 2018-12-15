@@ -8,3 +8,32 @@ work with
 
     - Comma-separated values .csv
     - built-in calender system
+
+- [x] Schedule creation
+- [x] Saving Schedule
+- [x] basic redo implementation
+- [x] Compare with a empty schedule 
+- [x] Change the visibility of the label in the grid
+- [x] Cli version
+- [ ] Compare with save schedule
+- [ ] Implementation of the exportation in .ics and custom .csv
+- [ ] Implement google calender compare
+- [ ] Cleaner interface with pyqt5
+
+
+Click on timespace to create a schedule
+
+![Schedule](/image/schedule.jpg)
+
+Compare two schedule and find the free time between both schedule
+
+
+![Free](/image/free_schedule.jpg)
+
+Change the visibility of the label in the grid
+
+![Label](/image/label.jpg)
+
+Console version 
+
+![cli](/image/cli.jpg)
