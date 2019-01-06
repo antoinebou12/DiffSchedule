@@ -8,7 +8,7 @@ import pickle
 
 import PyQt5
 from PyQt5.QtWidgets import QMainWindow, qApp, QApplication, QWidget, QDialog, QDesktopWidget, \
-                            QFileDialog, QLabel, QPushButton, QTextEdit, QScrollArea,  \
+                            QFileDialog, QLabel, QPushButton, QTextEdit, QScrollArea, QLineEdit, QRadioButton,  \
                             QVBoxLayout, QHBoxLayout, QGridLayout, QGroupBox, QSizePolicy, \
                             QUndoStack, QUndoCommand,\
                             QMenu, QAction, \
@@ -141,6 +141,7 @@ class MainGUI(QMainWindow):
         # self.import_csvAct = QAction(QIcon('csv.png'), '&csv', self)
         self.export_csvAct = QAction('&csv', self)
         self.export_csvAct.setStatusTip('Import csv')
+        self.export_csvAct.triggered.connect(self.export_csv)
 
         # exitAct = QAction(QIcon('exit.png'), '&Exit', self)
         self.exitAct = QAction('&Exit', self)
@@ -234,6 +235,12 @@ class MainGUI(QMainWindow):
         clear_week = ClearCommand(grid=self.grid)
         self.undoStack.push(clear_week)
 
+    def import_csv(self):
+        ImportFile(self.grid.week, 'FreeTime.csv').csv()
+
+    def export_csv(self):
+        ExportFile(self.grid.week, 'FreeTime.csv').csv()
+
     def undo(self):
         self.undoStack.undo()
 
@@ -279,8 +286,9 @@ class MainGUI(QMainWindow):
         self.fileMenu.addSeparator()
 
         self.fileMenu.addMenu(self.importMenu)
+        self.importMenu.addAction(self.import_csvAct)
         self.fileMenu.addMenu(self.exportMenu)
-        self.exportMenu.addAction(self.exportAct)
+        self.exportMenu.addAction(self.export_csvAct)
 
         self.fileMenu.addSeparator()
 
@@ -357,8 +365,8 @@ class CompareDialog(QDialog):
         self.setWindowTitle(self.title)
 
         buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttonBox.accepted.connect(self.acceptbtn)
-        buttonBox.rejected.connect(self.rejectbtn)
+        buttonBox.accepted.connect(self.accept_btn)
+        buttonBox.rejected.connect(self.reject_btn)
 
         layout = QFormLayout(self)
 
@@ -395,7 +403,7 @@ class CompareDialog(QDialog):
     def selectionchange2(self, txt):
         self.text2 = txt
 
-    def acceptbtn(self):
+    def accept_btn(self):
 
         if self.text1 == "Current Space":
             week1 = self.parent.grid.week
@@ -422,7 +430,7 @@ class CompareDialog(QDialog):
 
         self.accept()
 
-    def rejectbtn(self):
+    def reject_btn(self):
         self.reject()
 
 
@@ -695,6 +703,7 @@ class DateGrid(QWidget):
         self.update_state()
 
     def time_btn(self):
+        # Generate the button grid
         for d in range(self._num_col):
             for t in range(self._num_row):
 
@@ -704,6 +713,9 @@ class DateGrid(QWidget):
                                         # self.week_space.get_space(d, t).start,
                                         # self.week_space.get_space(d, t).end
                                         ))
+                time_btn.setToolTip("%s\n%s\n%s" % (self._week.get_space(d, t).title,
+                                                    self._week.get_space(d, t).description,
+                                                    self._week.get_space(d, t).str()))
 
                 self.grid_layout_date.addWidget(time_btn, t, d)
 
@@ -721,30 +733,38 @@ class DateGrid(QWidget):
         if index >= 0:
             day, time = np.unravel_index(index, (self._num_col, self._num_row))
 
-        if self._week.get_space(day, time).state is False:
+        # Click modifier
+        modifiers = QApplication.keyboardModifiers()
+        if modifiers == Qt.ControlModifier:
+            self.edit_info(day, time)
+        else:
+            if self._week.get_space(day, time).state is False:
 
-            sender.setStyleSheet(self.pressed_style)
-            self._week.get_space(day, time).state = True
+                sender.setStyleSheet(self.pressed_style)
+                self._week.get_space(day, time).state = True
 
-            # TODO
-            # Fill
-            if self.parent.parent.fill_bool:
-                if self.b1 is None:
-                    self.b1 = (day, time)
-                else:
-                    self.b2 = (day, time)
-                if self.b1[0] == self.b2[0]:
-                    self._week.get_day(self.b1[0]).fill_gap(self.b1[1], self.b2[1])
-                    self.update_state()
-            # if self.week_space.get_space(day, time-1).state:
-            #     pass
-            #
-            # if self.week_space.get_space(day, time+1).state:
-            #     pass
+                # TODO
+                # Fill
+                if self.parent.parent.fill_bool:
+                    if self.b1 is None:
+                        self.b1 = (day, time)
+                    else:
+                        self.b2 = (day, time)
+                    if self.b1[0] == self.b2[0]:
+                        self._week.get_day(self.b1[0]).fill_gap(self.b1[1], self.b2[1])
+                        self.update_state()
+                # if self.week_space.get_space(day, time-1).state:
+                # pass
+                #
+                # if self.week_space.get_space(day, time+1).state:
+                #     pass
 
-        elif self._week.get_space(day, time).state:
-            sender.setStyleSheet(self.default_style)
-            self._week.get_space(day, time).state = False
+            elif self._week.get_space(day, time).state:
+                sender.setStyleSheet(self.default_style)
+                self._week.get_space(day, time).state = False
+
+    def edit_info(self, d, t):
+        edit_dialog = SpaceEditDialog(d, t, parent=self)
 
     def update_state(self, compare=False):
         iteration = 0
@@ -760,6 +780,59 @@ class DateGrid(QWidget):
             elif self._week.get_space(d, t).state is False:
                 w.widget().setStyleSheet(self.default_style)
             iteration = iteration + 1
+
+
+class SpaceEditDialog(QDialog):
+    def __init__(self, d, t, parent=None):
+        super(SpaceEditDialog, self).__init__(parent)
+
+        self.parent = parent
+        self._day = d
+        self._time = t
+
+        self._space = self.parent.week.get_space(self._day, self._time)
+
+        self.title_text = QLineEdit(self)
+        self.description_text = QLineEdit(self)
+        self.state_btn = QRadioButton("State")
+
+        self.initUI()
+
+    def initUI(self):
+        self.setWindowTitle("Edit Info")
+
+        buttonBox = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttonBox.accepted.connect(self.accept_btn)
+        buttonBox.rejected.connect(self.reject_btn)
+
+        layout = QFormLayout(self)
+
+        title_label = QLabel("Title")
+        description_label = QLabel("Description")
+        lapse_label = QLabel(self._space.str())
+
+        self.title_text.setText(self._space.title)
+        self.description_text.setText(self._space.description)
+        self.state_btn.setChecked(self._space.state)
+
+        layout.addRow(title_label, self.title_text)
+        layout.addRow(description_label, self.description_text)
+        layout.addWidget(self.state_btn)
+        layout.addWidget(lapse_label)
+        layout.addWidget(buttonBox)
+
+        self.setLayout(layout)
+
+        self.show()
+
+    def accept_btn(self):
+        self._space.title = self.title_text.text()
+        self._space.description = self.description_text.text()
+        self._space.state = self.state_btn.isChecked()
+        self.accept()
+
+    def reject_btn(self):
+        self.reject()
 
 
 class DayLabelDateGrid(QWidget):

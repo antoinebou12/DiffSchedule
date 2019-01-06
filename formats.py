@@ -10,21 +10,19 @@ class ImportFile(object):
     """
 
     """
-    def __init(self):
-        pass
+    def __init__(self, fname):
+        self._fname = fname
 
     def base(self):
         pass
 
-    def csv(self, file, debug=False):
+    def csv(self, debug=False):
         """
 
         """
-        reader = csv.reader(open(file, newline=''), delimiter=',', quotechar='|')
+        reader = csv.reader(open(self._fname, newline=''), delimiter=',', quotechar='|')
 
         raw = []
-        infoV = []
-        infoH = []
         data = []
 
         for line in reader:
@@ -32,14 +30,8 @@ class ImportFile(object):
             if debug:
                 print(','.join(line))
 
-        for i in range(8):
-            for j in range(288):
-                if i == 0:
-                    infoH.append(raw[j][0])
-                if j == 0:
-                    infoV.append(raw[0][i])
-                if i > 0:
-                    data.append(raw[j][i])
+        for line in raw:
+            data.append(line)
 
         return data
 
@@ -48,16 +40,17 @@ class ExportFile(object):
     """
 
     """
-    def __init(self):
-        pass
+
+    def __init__(self, week, fname):
+        self.week = week
+        self._fname = fname
 
     def base(self):
         pass
 
-    def csv(self, file, week=WeekSpace(0, 0), debug=False):
-        with open(file, 'w', newline='') as f:
+    def csv(self, debug=False):
+        with open(self._fname, 'w', newline='') as f:
             writer = csv.writer(f, delimiter=',', quotechar='|', quoting=csv.QUOTE_MINIMAL)
-            writer.writerow(['Weekday'] + day_name[:])
 
             index = []
             sub_index = []
@@ -71,7 +64,7 @@ class ExportFile(object):
 
             loop_iter = 0
 
-            for j in range(week.get_day(0).num_space):
+            for j in range(self.week.get_day(0).num_space):
                 for i in range(DAY_IN_WEEK):
 
                     sub_index.append(loop_iter)
@@ -80,13 +73,13 @@ class ExportFile(object):
                         index.append(sub_index)
                         sub_index = []
 
-                    num.append(str(week.get_space((i, j)).num))
-                    title.append(week.get_space((i, j)).title)
-                    description.append(week.get_space((i, j)).description)
-                    state.append(str(week.get_space((i, j)).state))
+                    num.append(str(self.week.get_space(i, j).num))
+                    title.append(self.week.get_space(i, j).title)
+                    description.append(self.week.get_space(i, j).description)
+                    state.append(str(self.week.get_space(i, j).state))
 
-                    min_start = week.get_space((i, j)).start
-                    min_end = week.get_space((i, j)).end
+                    min_start = self.week.get_space(i, j).start
+                    min_end = self.week.get_space(i, j).end
 
                     hours_start = str(timedelta(minutes=min_start))[:-3]
                     hours_end = str(timedelta(minutes=min_end))[:-3]
@@ -102,7 +95,7 @@ class ExportFile(object):
                     loop_iter = loop_iter + 1
 
             for l in range(DAY_IN_WEEK):
-                for k in range(week.get_day(0).num_space):
+                for k in range(self.week.get_day(0).num_space):
                     writer.writerow(np.take(num, index[k]))
                     writer.writerow(np.take(title, index[k]))
                     writer.writerow(np.take(description, index[k]))
@@ -113,6 +106,6 @@ class ExportFile(object):
 
 if __name__ == '__main__':
 
-    # ImportFile().csv('test\data\FreeTime.csv')
-    ExportFile().csv('FreeTime.csv')
+    ImportFile("FreeTime.csv").csv()
+    # ExportFile(WeekSpace(0, 0), 'FreeTime.csv').csv()
 
